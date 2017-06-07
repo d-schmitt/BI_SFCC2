@@ -8,6 +8,7 @@ Created on Tue May 23 13:34:13 2017
 #pandas is used for creating DataFrames for more elaborate datasets and analysis
 import pandas as pd
 import numpy as np
+import scipy.stats as sc
 
 #Seaborn is a powerful data visualization library
 import seaborn as sns
@@ -16,7 +17,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 
-file_name = 'BI_adjusted'
+file_name = 'BI_adjusted_preprocessed_preprocessed_2014'
 # Create DataFrame using Pandas
 crime = pd.read_csv(file_name+'.csv', sep = ',', engine='python')
 
@@ -34,8 +35,96 @@ crime = pd.concat([crime, crim5, crim4], axis=1, join_axes=[crime.index])
 crime = crime.drop_duplicates(keep='first')
 crime = crime.reset_index(drop=True)
 del crime['Resolution']
+empty_fields= sum(crime['Y']==90)
 
+# delete 
+crime = crime[crime.Y != 90]
+crime = crime.reset_index(drop=True)
 # alternative: iris2 = sns.load_dataset("iris")
+
+crime = crime[crime.Year == 2014]
+
+crime["Category2"] = crime["Category"].astype('category')
+# distanz zwischen größtem und kleinstem berehnen für Y
+
+
+y_grid = [[0 for y in range(1)] for x in range(len(crime))]
+x_grid = [[0 for y in range(1)] for x in range(len(crime))]
+
+maxpy = crime.Y.idxmax()
+max_value_y = crime.Y[maxpy]
+
+minpy=crime.Y.idxmin()
+min_value_y = crime.Y[minpy]
+
+maxpx = crime.X.idxmax()
+max_value_x = crime.X[maxpx]
+
+minpx=crime.X.idxmin()
+min_value_x = crime.X[minpx]
+
+distance_x = max_value_x - min_value_x
+distance_y = max_value_y - min_value_y
+
+grid = 10
+
+grid_distance_x = distance_x / grid
+grid_distance_y = distance_y / grid
+
+for i in range(len(crime)):
+    if(crime.Y[i] <= min_value_y+grid_distance_y):
+        y_grid[i] = 1
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*2):
+        y_grid[i] = 2
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*3):
+        y_grid[i] = 3
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*4):
+        y_grid[i] = 4
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*5):
+        y_grid[i] = 5
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*6):
+        y_grid[i] = 6
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*7):
+        y_grid[i] = 7
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*8):
+        y_grid[i] = 8
+    elif(crime.Y[i] <= min_value_y + grid_distance_y*9):
+        y_grid[i] = 9
+    else:
+        y_grid[i] = 10
+        
+y_grid = pd.DataFrame(data = y_grid)
+crime['y_grid'] = y_grid
+
+for i in range(len(crime)):
+    if(crime.X[i] <= min_value_x+grid_distance_x):
+        x_grid[i] = 1
+    elif(crime.X[i] <= min_value_x + grid_distance_x*2):
+        x_grid[i] = 2
+    elif(crime.X[i] <= min_value_x + grid_distance_x*3):
+        x_grid[i] = 3
+    elif(crime.X[i] <= min_value_x + grid_distance_x*4):
+        x_grid[i] = 4
+    elif(crime.X[i] <= min_value_x + grid_distance_x*5):
+        x_grid[i] = 5
+    elif(crime.X[i] <= min_value_x + grid_distance_x*6):
+        x_grid[i] = 6
+    elif(crime.X[i] <= min_value_x + grid_distance_x*7):
+        x_grid[i] = 7
+    elif(crime.X[i] <= min_value_x + grid_distance_x*8):
+        x_grid[i] = 8
+    elif(crime.X[i] <= min_value_x + grid_distance_x*9):
+        x_grid[i] = 9
+    else:
+        x_grid[i] = 10
+        
+x_grid = pd.DataFrame(data = x_grid)
+crime['x_grid'] = x_grid
+
+crime.to_csv(file_name+'_preprocessed.csv', sep=',', encoding='utf-8')
+
+
+# idee: adaptives grid: je nach datenmenge feiner oder nicht
 
 # Show descriptive statistics on dimensional distributions
 print(crime.describe()) # hier nicht sehr sinnvolle Ausgabe
@@ -108,13 +197,25 @@ x = crime.X.tolist()
 x1,y1=earth(x, y)
 # earth.bluemarble(alpha=0.42)
 earth.drawcoastlines(color='#555566', linewidth=1)
-plt.scatter(x1, y1, 
-            c='red',alpha=0.01, zorder=1)
-#m.scatter(x1,y1,s=sizes,c=cols,marker="o",cmap=cm.cool,alpha=0.7)
+
+
+cmap = {'Diebstahl': 'red', 'Andere Delikte': 'blue', 'Koerperverletzung': 'yellow',
+        'Einbruch/Raub': 'black', 'Wirtschaftsdelikte': 'blue', 'Beschaedigung von Gegenstaenden': 'blue',
+        'Drogen-/Waffendelikte': 'blue', 'KIDNAPPING': 'blue', 'SECONDARY CODES':'blue',
+        'Sexualdelikte': 'blue'}
+colors = crime.Category2.map(cmap)
+
+plt.scatter(x1, y1, c = colors,
+                            alpha=0.05, zorder=1)
+
+#plt.colorbar()
+#plt.legend()
+
+
 plt.xlabel("Addresses displayed on a map")
 plt.savefig(file_name+'earthmap.png', dpi=800)
 
-earth.plot(crime.X, crime.Y,'ro', markersize=6)
+#earth.plot(crime.X, crime.Y,'ro', markersize=6)
 plt.show()
 # Docu: https://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.plot.html
 
@@ -159,3 +260,34 @@ g= sns.clustermap(t,standard_scale=0) # Normalize horizontally across crime type
 plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0) 
 #########################################################
 #########################################################
+# Heatmap zur Correlationsanalyse
+########################################################
+# define the column names
+cols = ['Dates', 'Category', 'Descript', 'DayOfWeek', 'PdDistrict', 'Address',
+       'X', 'Y', 'Hour', 'Minutes', 'Seconds', 'Year', 'Month', 'Day',
+       'x_grid', 'y_grid']
+ 
+# Calucalte the pearson correlation coefficient
+cm = np.corrcoef(crime.values.T) # chi2_contingency(crime.values.T)
+
+cm = sc.chi2_contingency(crime.values.T)
+# Correlation Heatmap Plot
+sns.set(font_scale=1)
+sns.set(style="white")
+mask = np.zeros_like(cm)
+mask[np.triu_indices_from(mask)] = True
+hm = sns.heatmap(cm, cbar=False, annot=True, square=True, fmt='.3f',
+    annot_kws={'size': 8}, yticklabels=cols, xticklabels=cols, cmap="RdBu_r",
+  mask=mask, linewidths=.5)
+plt.tight_layout()
+#plt.savefig('heatmap.pdf')
+plt.show()
+
+#########################################################################
+
+xx, yy = np.meshgrid(crime.x_grid, crime.y_grid)
+
+plt.plot(xx, yy, marker='.', color='k', linestyle='none')
+
+
+######################################################################

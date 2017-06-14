@@ -48,6 +48,16 @@ crime["Category2"] = crime["Category"].astype('category')
 # distanz zwischen größtem und kleinstem berehnen für Y
 
 
+
+# secondary codes und kidnapping rausschmeißen
+crime = crime[crime.Category != 'SECONDARY CODES']
+crime = crime[crime.Category != 'KIDNAPPING']
+
+
+##############################################################################
+# Erstellung 10x10 Grid
+##############################################################################
+
 y_grid = [[0 for y in range(1)] for x in range(len(crime))]
 x_grid = [[0 for y in range(1)] for x in range(len(crime))]
 
@@ -131,8 +141,19 @@ print(crime.describe()) # hier nicht sehr sinnvolle Ausgabe
 
 
 ## Selected grafics
-
+"""
+einmal für große datei
+"""
 crime.Category.value_counts().plot(kind='bar')
+
+pd.crosstab(crime.DayOfWeek, crime.Category).plot(kind="line", 
+                 figsize=(8,8),
+                 stacked=False)
+
+pd.crosstab(crime.Hour, crime.Category).plot(kind="line", 
+                 figsize=(12,12),
+                 stacked=False)
+
 
 # Anzahl Einträge zu einer Category
 sum(crime['Category']=='SECONDARY CODES')
@@ -147,6 +168,9 @@ pd.crosstab(crime.PdDistrict, crime.Category).plot(kind="bar",
                  figsize=(8,8),
                  stacked=False)
 
+pd.crosstab(crime.DayOfWeek, crime.Category).plot(kind="line", 
+                 figsize=(8,8),
+                 stacked=False)
 pd.crosstab(crime.DayOfWeek, crime.PdDistrict).plot(kind="line", 
                  figsize=(8,8),
                  stacked=False)
@@ -195,27 +219,52 @@ earth = Basemap(
 y = crime.Y.tolist()
 x = crime.X.tolist()
 x1,y1=earth(x, y)
-# earth.bluemarble(alpha=0.42)
 earth.drawcoastlines(color='#555566', linewidth=1)
 
-
-cmap = {'Diebstahl': 'red', 'Andere Delikte': 'blue', 'Koerperverletzung': 'yellow',
-        'Einbruch/Raub': 'black', 'Wirtschaftsdelikte': 'blue', 'Beschaedigung von Gegenstaenden': 'blue',
-        'Drogen-/Waffendelikte': 'blue', 'KIDNAPPING': 'blue', 'SECONDARY CODES':'blue',
-        'Sexualdelikte': 'blue'}
+cmap = {'Diebstahl': 'y', 'Andere Delikte': 'g', 'Koerperverletzung': 'r',
+        'Einbruch/Raub': 'c', 'Wirtschaftsdelikte': 'm', 'Beschaedigung von Gegenstaenden': 'blue',
+        'Drogen-/Waffendelikte': 'b', 'KIDNAPPING': 'blue', 'SECONDARY CODES':'blue',
+        'Sexualdelikte': 'k'}
 colors = crime.Category2.map(cmap)
+"""
+b: blue
+g: green
+r: red
+c: cyan
+m: magenta
+y: yellow
+k: black
+"""
 
-plt.scatter(x1, y1, c = colors,
-                            alpha=0.05, zorder=1)
-
+plt.scatter(x1, y1, c = colors, alpha=0.05, zorder=1)
 #plt.colorbar()
 #plt.legend()
-
 
 plt.xlabel("Addresses displayed on a map")
 plt.savefig(file_name+'earthmap.png', dpi=800)
 
 #earth.plot(crime.X, crime.Y,'ro', markersize=6)
+plt.show()
+
+
+
+##################################################################
+
+fig = plt.figure()
+ax = fig.gca()
+ax.set_xticks(np.arange(0, 1, 0.1))
+ax.set_yticks(np.arange(0, 1., 0.1))
+plt.scatter(crime.x_grid, crime.y_grid)
+plt.grid()
+plt.show()
+
+#############################################################################
+# some kind of heatmap
+heatmap, xedges, yedges = np.histogram2d(x1, y1, bins=40)
+extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+
+plt.clf()
+plt.imshow(heatmap.T, extent=extent, origin='lower')
 plt.show()
 # Docu: https://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.plot.html
 
@@ -288,6 +337,9 @@ plt.show()
 xx, yy = np.meshgrid(crime.x_grid, crime.y_grid)
 
 plt.plot(xx, yy, marker='.', color='k', linestyle='none')
+
+
+######################################################################
 
 
 ######################################################################
